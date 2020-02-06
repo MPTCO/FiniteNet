@@ -238,7 +238,7 @@ def KS(xgf,tgf,IC,al,dt,dx):
             u_ex[:,i] = u0
     return u_ex
 #Load trained model
-model.load_state_dict(torch.load('KSNet_temp'))
+model.load_state_dict(torch.load('KSNet_FINAL'))
 
 strt = time.time()
 L = 20
