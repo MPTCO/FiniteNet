@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+Created on Tue Sep 24 18:08:55 2019
 
+@author: ben91
 """
 import torch
 from torch import nn
@@ -41,10 +43,7 @@ plt.rc('figure', titlesize=FSZ)  # fontsize of the figure title
 plt.rcParams['axes.linewidth'] = ALW    # sets the default axes lindewidth to ``ALW''
 plt.rcParams["mathtext.fontset"] = 'cm' # Computer Modern mathtext font (applies when ``usetex=False'')
 
-#load the data here. coment out whenever possible
-
-r2 = np.load('invBurgData.npy')
-
+# Define the network architecture
 class Model(nn.Module):
     def __init__(self, input_size, output_size, hidden_dim, n_layers):
         super(Model, self).__init__()
@@ -183,35 +182,24 @@ def compTV(u):
 batch_size = xc.size(0)
 IC_fx = makeIC(L)
 mbs = 5
-#errs_WE2 = torch.load('weno5_err.pt')
-#torch.manual_seed(357)
-#TV = torch.zeros((n_epochs,mbs),dtype=torch.double)
-#all_ratio = torch.zeros((n_epochs,mbs),dtype=torch.double)
 
 model.load_state_dict(torch.load('InvNet'))
 
-
-n_tests = 1000
+n_tests = 10
 test_rat = torch.zeros(n_tests)
 test_TV = torch.zeros(n_tests)
 min_rat = 1
-#te = torch.linspace(0,T,int(4/dt)+1,dtype=torch.double)
-#xge,tge = torch.meshgrid(xc,te)#make the fine grid
+
 icf = makeIC(L)
 for j in range(0,n_tests):
-    #tst = np.random.randint(600, high=750)
     IC = icf(xcf)
     IC = IC - min(IC)
     target_seq =  burgEx(xgf,tgf,IC)
-    #target_seq = torch.t(solt[:,:])
-    #target_seq = solt.unsqueeze(0)
-        #target_seq = target_seq.unsqueeze(0)        
     
     hidden1 = model.init_hidden(batch_size)
     h1_we = model.init_hidden(batch_size)
 
     x_t = target_seq[0,0,:]
-    #x_t = torch.sin(2*np.pi*xc/L)
     output = torch.zeros_like(target_seq)
     output_we = torch.zeros_like(target_seq)
     x_t = x_t.unsqueeze(0)
@@ -222,7 +210,6 @@ for j in range(0,n_tests):
     output_we[:,0,:] = x_t.detach()
     
     for i in range(0,S):
-        #print(i)
         x_t, hidden1, f1nn = model(x_t.detach(),dt,dx, hidden1, 1)
         y_t, h1_we, f1we = model(y_t.detach(),dt,dx, h1_we, 0)
         output[:,i+1,:] = x_t.detach()
@@ -239,112 +226,24 @@ for j in range(0,n_tests):
         sol_WE = output_we.detach()
     print('Iter: ',j,' Err: ',test_rat[j])
 
+#Plot total variation vs error ratio
 plt.figure()
 plt.plot(test_TV,test_rat,'.')
 plt.xlabel('$TV(u(x,0))$')
 plt.ylabel('Error Ratio')
 plt.tight_layout()
 
+#Animate a solution
 plt.figure()
 for i in range(0,len(tc)):
     plt.clf()
-    plt.plot(xc,sol_NN[0,i,:].detach())
-    plt.plot(xc,sol_WE[0,i,:].detach())
-    plt.plot(xc,sol_eg[0,i,:].detach())
+    plt.plot(xc,output[0,i,:].detach())
+    plt.plot(xc,output_we[0,i,:].detach())
+    plt.plot(xc,target_seq[0,i,:].detach())
     plt.pause(0.001)
 plt.legend(('RNN','FDM','Exact'))
 
-
-plt.figure()
-plt.plot(xc,sol_eg[0,-1,:].detach()-sol_NN[0,-1,:].detach())
-plt.plot(xc,sol_eg[0,-1,:].detach()-sol_WE[0,-1,:].detach())
-plt.plot(xc,sol_eg[0,-1,:].detach())
-plt.legend(('FiniteNet Error','WENO5 Error','Exact Solution'))
-plt.xlabel('$x$')
-plt.ylabel('$u$')
-
-plt.figure()
-ind = -4
-plt.plot(xc,sol_NN[0,ind,:].detach(),'.')
-plt.plot(xc,sol_WE[0,ind,:].detach(),'.')
-plt.plot(xc,sol_eg[0,ind,:].detach())
-plt.legend(('FiniteNet','WENO5','Exact Solution'))
-plt.xlabel('$x$')
-plt.ylabel('$u$')
-
-
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(12, 4))
-first = ax1.contourf(xge, tge, torch.t(output.detach().squeeze()))
-ax1.set_xlabel('$x$')
-ax1.set_ylabel('$t$')
-ax1.set_title('RNN')
-
-ax2.contourf(xge, tge, torch.t(output_we.detach().squeeze()))
-ax2.set_xlabel('$x$')
-ax2.set_title('High Order')
-
-ax3.contourf(xge, tge, torch.t(target_seq.detach().squeeze()))
-ax3.set_xlabel('$x$')
-ax3.set_title('Exact')
-
-f.tight_layout()
-cbar_ax = f.add_axes([.82, 0.15, 0.05, 0.7])
-f.colorbar(first, cax=cbar_ax)
-
-plt.figure()
-plt.plot(rel_err[rel_err!=0].detach())
-plt.xlabel('Epoch')
-plt.ylabel('Relative Error')
-'''
-plt.figure()
-we_err_t = torch.zeros(S)
-rn_err_t = torch.zeros(S)
-for i in range(0,S):
-    if(i%1==0):
-        plt.clf()
-        plt.plot(xc,output[0,i,:].detach(),'.')
-        plt.plot(xc,output_we[0,i,:].detach(),'.')
-        plt.plot(xc,target_seq[0,i,:].detach(),'o')
-        plt.legend(('RNN','WENO5-JS','Exact'))
-        plt.pause(0.00001)
-    rn_err_t[i] = criterion(output[0,i,:], target_seq[0,i,:])
-    #print('RNN: ',rn_err_t[i])
-    we_err_t[i] = criterion(output_we[0,i,:], target_seq[0,i,:])
-    #print('WENO5: ',we_err_t[i])
-    #plt.xlim((0.4,0.6))
-print('RNN error: ',criterion(output, target_seq))
-print('WENO5 error: ',criterion(output_we, target_seq))
-plt.figure()
-plt.plot(we_err_t.detach())
-plt.plot(rn_err_t.detach())
-#plt.legend(('WENO5','WENO-RNN'))
-'''
-#f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=False, figsize=(12, 4))
-cfl = 0.01
-dx = 0.25
-dt = cfl*dx
-L = 20
-T = 8
-xc = torch.linspace(0,L,int(L/dx)+1,dtype=torch.double)
-xc = xc[:-1]
-tc = torch.linspace(0,T,int(T/dt)+1,dtype=torch.double)
-xg,tg = torch.meshgrid(xc,tc)#make the coarse grid
-
-te = torch.linspace(0,T,int(8/dt)+1,dtype=torch.double)
-xge,tge = torch.meshgrid(xc,te)#make the fine grid
-plt.contourf(xg, tg, np.transpose(r2[:,100,:]))
-plt.xlabel('$x$')
-plt.ylabel('$t$')
-plt.colorbar()
-
-plt.figure()
-heights,bins = np.histogram(test_rat.detach(),bins=30)
-heights = heights/sum(heights)
-plt.bar(bins[:-1],heights,width=(max(bins) - min(bins))/len(bins), color="blue", alpha=0.5)
-plt.xlabel('Relative Error')
-plt.ylabel('Frequency')
-plt.tight_layout()
-
+#Make histogram of error ratio
 plt.figure(figsize=(6, 2))
 heights,bins = np.histogram(torch.log10(test_rat).detach(),bins=20)
 heights = heights/sum(heights)
