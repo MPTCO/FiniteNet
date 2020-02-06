@@ -185,7 +185,7 @@ mbs = 5
 
 model.load_state_dict(torch.load('InvNet'))
 
-n_tests = 10
+n_tests = 1000
 test_rat = torch.zeros(n_tests)
 test_TV = torch.zeros(n_tests)
 min_rat = 1
