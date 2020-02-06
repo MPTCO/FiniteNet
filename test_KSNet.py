@@ -263,7 +263,7 @@ tcf = torch.linspace(0,T,int(T/dtf)+1,dtype=torch.double)
 xg,tg = torch.meshgrid(xc,tc)#make the coarse grid
 xgf,tgf = torch.meshgrid(xcf,tcf)#make the fine grid
 
-N_tst = 2
+N_tst = 1000
 test_rat = torch.zeros(N_tst)
 fdm_err = torch.zeros(N_tst)
 fnn_err = torch.zeros(N_tst)
