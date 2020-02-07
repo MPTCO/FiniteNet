@@ -1,9 +1,7 @@
-#There is no failsafe
 # -*- coding: utf-8 -*-
 """
 Created on Tue Sep 24 18:08:55 2019
 
-@author: ben91
 """
 import torch
 from torch import nn
