@@ -130,7 +130,7 @@ class Model(nn.Module):
 model = Model(input_size=5, output_size=1, hidden_dim=32, n_layers=3)
 
 # Define hyperparameters
-n_epochs = 50
+n_epochs = 400
 lr = 0.001
 
 # Define Loss, Optimizer
@@ -176,7 +176,7 @@ if(randgr==0):
     xgf,tgf = torch.meshgrid(xcf,tcf)#make the fine grid
 batch_size = xc.size(0)
 IC_fx = makeICdsc(L)
-mbs = 1
+mbs = 5
 
 TV = torch.zeros((n_epochs,mbs),dtype=torch.double)
 all_ratio = torch.zeros((n_epochs,mbs),dtype=torch.double)
